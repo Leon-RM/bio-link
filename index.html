@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FloodGuard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-...." crossorigin="anonymous" referrerpolicy="no-referrer" />
+<style>
+:root {
+  --bg: #0d1117;
+  --card: #161b22;
+  --text: #f5f7fb;
+  --muted: #9aa4b5;
+  --accent-red: #ff3b30;
+  --accent-green: #2ed573;
+  --accent-yellow: #f1c40f;
+  --accent-orange: #ff9f1c;
+  --border: #1f2630;
+  --shadow: 0 10px 30px rgba(0,0,0,0.35);
+  --nav: rgba(20,24,32,0.95);
+  --radius: 14px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+  background: radial-gradient(circle at 20% 20%, rgba(255,59,48,0.08), transparent 25%),
+              radial-gradient(circle at 80% 0%, rgba(46,213,115,0.08), transparent 22%),
+              var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding-bottom: 110px; /* nav space for floating bar */
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 16px 8px;
+  position: sticky;
+  top: 0;
+  background: linear-gradient(180deg, rgba(13,17,23,0.96), rgba(13,17,23,0.82));
+  z-index: 5;
+  backdrop-filter: blur(8px);
+}
+h1, h2, h3 {
+  margin: 0;
+}
+.header-title {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+.status-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: 0 0 10px currentColor;
+}
+main { padding: 0 16px 16px; }
+.section { display: none; }
+.section.active { display: block; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow);
+}
+.map-placeholder {
+  position: relative;
+  overflow: hidden;
+  height: clamp(260px, 55vh, 420px);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+  background: url('Screenshot%202025-12-09%20220635.png') center/cover no-repeat;
+  margin-bottom: 14px;
+}
+.map-placeholder::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(0,0,0,0.45), rgba(0,0,0,0.2));
+}
+.map-label {
+  position: relative;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(4px);
+}
+.btn {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: transform 0.08s ease, opacity 0.15s ease;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--accent-red); }
+.btn-secondary { background: #2c3442; color: var(--text); }
+.btn-success { background: var(--accent-green); color: #0b1b12; }
+.btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.stack { display: grid; gap: 12px; }
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: #1a202c;
+  border: 1px solid var(--border);
+  margin-bottom: 14px; /* add space below the toggle so following UI isn't too close */
+  gap: 12px; /* small horizontal gap between children */
+}
+.switch {
+  width: 64px; height: 34px; /* slightly larger for visibility and touch */
+  border-radius: 999px;
+  background: #3a4557;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+.switch::after {
+  content: '';
+  position: absolute; top: 4px; left: 4px;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+}
+.switch.on { background: var(--accent-green); }
+.switch.on::after { transform: translateX(30px); }
+.mission-list { display: grid; gap: 12px; max-height: 400px; overflow: auto; padding-right: 2px; }
+.mission-card { border-left: 5px solid var(--border); }
+.mission-card.high { border-color: var(--accent-red); }
+.mission-card.premium { border-color: var(--accent-yellow); }
+.meta { color: var(--muted); font-size: 13px; margin: 6px 0 10px; display: grid; gap: 4px; }
+.chip { padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.06); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; }
+.navbar {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 520px;
+  background: var(--nav);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+  z-index: 10;
+}
+.navbar ul {
+  margin: 0; padding: 8px 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.nav-btn {
+  background: none; border: none; color: var(--muted);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  font-size: 12px; cursor: pointer;
+  padding: 10px 6px;
+}
+.nav-btn.active { color: var(--accent-green); }
+.karma-chip {
+  padding: 8px 12px;
+  background: rgba(46,213,115,0.12);
+  border: 1px solid rgba(46,213,115,0.6);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.donation-box {
+  border-left: 4px solid var(--accent-green);
+  background: linear-gradient(145deg, rgba(46,213,115,0.08), rgba(22,27,34,0.9));
+}
+.spacer { height: 8px; }
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 20;
+}
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow);
+}
+.modal h3 { margin-bottom: 10px; }
+.modal p { color: var(--muted); margin: 0 0 16px; }
+.modal-actions { display: grid; gap: 10px; }
+.input {
+  width: 100%; padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #1b202b;
+  color: var(--text);
+}
+/* Actions row for mission cards */
+.actions { display: flex; gap: 10px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.actions .btn { width: auto; padding: 10px 12px; min-width: 140px; }
+.btn-map {
+  width: 44px; height: 44px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #00d4ff, #00a9d9); color: #002b33; border: none; cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,173,220,0.15);
+}
+.btn-map i { font-size: 16px; }
+.btn-map:hover { filter: brightness(0.95); }
+
+.section-title { margin: 10px 0 12px; font-weight: 700; }
+.list { display: grid; gap: 10px; }
+.tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (min-width: 768px) {
+  .app { max-width: 720px; }
+  .map-placeholder { height: 280px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="header-title" id="headerTitle">FloodGuard</div>
+    <div class="header-right">
+      <div class="status-chip" id="statusChip">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Online</span>
+      </div>
+      <div class="karma-chip"><i class="fa-solid fa-star"></i><span id="karmaValue">Karma 240</span></div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Home -->
+    <section class="section active" id="home">
+      <div class="stack">
+        <div class="map-placeholder">
+          <div class="map-label">REAL-TIME MAP VIEW: Agents, Alerts, &amp; Victim Locations</div>
+        </div>
+        <button class="btn btn-primary" id="sosBtn"><i class="fa-solid fa-satellite-dish"></i> SOS / NEED IMMEDIATE HELP</button>
+        <button class="btn btn-secondary" id="safeBtn"><i class="fa-solid fa-circle-check"></i> I AM SAFE</button>
+        <div class="card mission-card donation-box">
+          <h3>Fund the Fleet & Agents</h3>
+          <div class="meta" style="margin-top: 6px; margin-bottom: 10px;">
+            <span>Keep drones flying and responders rewarded.</span>
+          </div>
+          <div class="stack" style="gap: 8px;">
+            <input class="input" type="number" placeholder="Enter donation amount (THB)" />
+            <button class="btn btn-success" style="padding: 12px 14px; font-size: 14px;"><i class="fa-solid fa-coins"></i> Donate Now (฿ Fund Agent Rewards)</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Agents -->
+    <section class="section" id="agents">
+      <h2 class="section-title">Flood Agent Hub</h2>
+      <div class="toggle card">
+        <div>
+          <strong>READY TO HELP</strong><br>
+          <span class="muted" style="color: var(--muted);">Switch to go Inactive</span>
+        </div>
+        <div class="switch" id="agentSwitch"></div>
+      </div>
+
+      <div class="mission-list">
+        <div class="card mission-card high">
+          <div class="chip"><i class="fa-solid fa-bolt"></i> High Priority</div>
+          <h3>Rescue Needed</h3>
+          <div class="meta">
+            <span>Victims: 3</span>
+            <span>Distance: 1.2 km</span>
+            <span>Reward: 120 Karma</span>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary">Accept Rescue Mission</button>
+            <button class="btn-map" title="View in Map"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+          </div>
+        </div>
+
+        <div class="card mission-card premium">
+          <div class="chip" style="color: var(--accent-yellow);"><i class="fa-solid fa-crown"></i> Premium Asset</div>
+          <h3>Asset Protection</h3>
+          <div class="meta">
+            <span>Item: Documents</span>
+            <span>Distance: 2.5 km</span>
+            <span>Reward: 60 Karma</span>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary">Accept Asset Mission</button>
+            <button class="btn-map" title="View in Map"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+          </div>
+        </div>
+        <!-- Additional agent mission examples -->
+        <div class="card mission-card">
+          <div class="chip"><i class="fa-solid fa-waves"></i> Flood Watch</div>
+          <h3>Waiting for rescue</h3>
+          <div class="meta">
+            <span>Victims: 1</span>
+            <span>Distance: 800 m</span>
+            <span>Reward: 30 Karma</span>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary">Accept Mission</button>
+            <button class="btn-map" title="View in Map"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+          </div>
+        </div>
+
+        <div class="card mission-card">
+          <div class="chip"><i class="fa-solid fa-location-crosshairs"></i> Recon</div>
+          <h3>Rescue Needed </h3>
+          <div class="meta">
+            <span>victims : 10</span>
+            <span>Distance: 3.1 km</span>
+            <span>Reward: 600 Karma</span>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary">Accept Recon</button>
+            <button class="btn-map" title="View in Map"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Supplies -->
+    <section class="section" id="supplies">
+      <h2 class="section-title">Supply & Drone Operations</h2>
+
+      <!-- Moved: Rent a Drone / Remote Pilot Console placed above the Drone Pilot toggle -->
+      <div class="card mission-card premium" style="margin-bottom:12px;">
+        <h3>Rent a Drone / Remote Pilot Console</h3>
+        <div class="meta">
+          <span>Access on-demand drones or control remotely.</span>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary">Launch Remote Console (Waypoint System)</button>
+          <button class="btn-map" title="View in Map"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+        </div>
+      </div>
+
+      <div class="toggle card">
+        <div>
+          <strong>Drone Pilot</strong><br>
+          <span class="muted" style="color: var(--muted);">READY / OFFLINE</span>
+        </div>
+        <div class="switch" id="droneSwitch"></div>
+      </div>
+
+      <div class="mission-list">
+        <div class="card mission-card">
+          <div class="chip"><i class="fa-solid fa-box"></i> Awaiting Assignment</div>
+          <h3>Payload: Food & Meds</h3>
+          <div class="meta">
+            <span>Status: Awaiting Assignment</span>
+            <span>Est. Flight Time: 12 mins</span>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary">Claim Supply Mission</button>
+            <button class="btn-map" title="View in Map"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+          </div>
+        </div>
+
+        <!-- Additional supply mission examples -->
+        <div class="card mission-card">
+          <div class="chip"><i class="fa-solid fa-first-aid"></i> Medical Supply</div>
+          <h3>Deliver: First Aid Kit</h3>
+          <div class="meta">
+            <span>Priority: High</span>
+            <span>Distance: 1.8 km</span>
+            <span>Est. Flight Time: 9 mins</span>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary">Claim Mission</button>
+            <button class="btn-map" title="View in Map"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+          </div>
+        </div>
+
+        <div class="card mission-card">
+          <div class="chip" style="color: var(--accent-yellow);"><i class="fa-solid fa-battery-full"></i> Battery Swap</div>
+          <h3>Swap Drone Batteries</h3>
+          <div class="meta">
+            <span>Location: Forward Outpost</span>
+            <span>Distance: 4.2 km</span>
+            <span>Est. Flight Time: 18 mins</span>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary">Accept Task</button>
+            <button class="btn-map" title="View in Map"><i class="fa-solid fa-arrow-up-right-from-square"></i></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Account -->
+    <section class="section" id="account">
+      <h2 class="section-title">My Account & Funding</h2>
+      <div class="card mission-card">
+        <h3>Current Tier: Survivor (FREE)</h3>
+        <button class="btn btn-primary" style="margin-top: 10px;">Upgrade to Guardian Tier</button>
+      </div>
+
+      <div class="card mission-card" style="margin-top: 12px;">
+        <h3>Premium Features</h3>
+        <div class="tag-list" style="margin-top: 8px;">
+          <span class="chip"><i class="fa-solid fa-location-dot"></i> Real-Time Family Tracker</span>
+          <span class="chip"><i class="fa-solid fa-cloud"></i> Last Known Location Backup</span>
+          <span class="chip"><i class="fa-solid fa-bell"></i> Priority Alerts</span>
+        </div>
+      </div>
+
+      <div class="card mission-card" style="margin-top: 12px;">
+        <h3>Agent Verification</h3>
+        <button class="btn btn-secondary" style="margin-top: 10px;">Begin Agent Sign-Up & Verification</button>
+      </div>
+
+    </section>
+  </main>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="navbar">
+  <ul>
+    <li><button class="nav-btn active" data-target="home"><i class="fa-solid fa-house"></i><span>Home</span></button></li>
+    <li><button class="nav-btn" data-target="agents"><i class="fa-solid fa-people-group"></i><span>Agents</span></button></li>
+    <li><button class="nav-btn" data-target="supplies"><i class="fa-solid fa-boxes-stacked"></i><span>Supplies</span></button></li>
+    <li><button class="nav-btn" data-target="account"><i class="fa-solid fa-user-shield"></i><span>Account</span></button></li>
+  </ul>
+</nav>
+
+<!-- SOS Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>EMERGENCY ALERT</h3>
+    <p>Your Last Known Location and status will be shared. Are you sure?</p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="confirmSos">Confirm SOS</button>
+      <button class="btn btn-ghost" id="cancelSos">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.section');
+const navButtons = document.querySelectorAll('.nav-btn');
+const headerTitle = document.getElementById('headerTitle');
+
+navButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.target;
+    sections.forEach(sec => sec.classList.toggle('active', sec.id === target));
+    navButtons.forEach(n => n.classList.toggle('active', n === btn));
+    headerTitle.textContent = target === 'home' ? 'FloodGuard' :
+                              target === 'agents' ? 'Flood Agent Hub' :
+                              target === 'supplies' ? 'Supply & Drone Ops' :
+                              'My Account';
+  });
+});
+
+// Connectivity status toggler (simulate online/offline mesh)
+const statusChip = document.getElementById('statusChip');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+let online = true;
+setInterval(() => {
+  online = !online;
+  statusText.textContent = online ? 'Online' : 'Offline: Mesh Active';
+  statusDot.style.background = online ? 'var(--accent-green)' : 'var(--accent-orange)';
+  statusChip.style.borderColor = online ? 'var(--accent-green)' : 'var(--accent-orange)';
+}, 6000);
+
+// Toggles
+function wireSwitch(id) {
+  const el = document.getElementById(id);
+  el.addEventListener('click', () => el.classList.toggle('on'));
+}
+wireSwitch('agentSwitch');
+wireSwitch('droneSwitch');
+
+// SOS Modal
+const modal = document.getElementById('modal');
+const sosBtn = document.getElementById('sosBtn');
+const cancelSos = document.getElementById('cancelSos');
+const confirmSos = document.getElementById('confirmSos');
+sosBtn.addEventListener('click', () => modal.style.display = 'flex');
+cancelSos.addEventListener('click', () => modal.style.display = 'none');
+confirmSos.addEventListener('click', () => {
+  modal.style.display = 'none';
+  alert('SOS Confirmed. Dispatching nearest agents and sharing location.');
+});
+document.getElementById('safeBtn').addEventListener('click', () => {
+  const safeBtn = document.getElementById('safeBtn');
+  safeBtn.classList.remove('btn-secondary');
+  safeBtn.classList.add('btn-success');
+  safeBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Status: SAFE';
+  alert('Status marked as SAFE. Any pending distress is cleared.');
+});
+modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+</script>
+</body>
+</html>
